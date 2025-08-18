@@ -1,0 +1,31 @@
+{
+  "name": "ElizaOS Development Environment",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": ["db:5432"],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-ossdata.vscode-postgresql",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-typescript-next",
+        "rust-lang.rust-analyzer",
+        "tauri-apps.tauri-vscode",
+        "ms-playwright.playwright"
+      ],
+      "settings": {
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+      }
+    }
+  },
+  "postCreateCommand": "bun install && bun run build",
+  "postStartCommand": "echo 'ElizaOS development environment ready!'",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  }
+}

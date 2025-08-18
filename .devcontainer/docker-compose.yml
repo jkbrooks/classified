@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/base:ubuntu
+    volumes:
+      - ..:/workspaces/${LOCAL_WORKSPACE_FOLDER_BASENAME}:cached
+    working_dir: /workspaces/${LOCAL_WORKSPACE_FOLDER_BASENAME}
+    command: sleep infinity
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_URL=postgresql://postgres:postgres@db:5432/eliza
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/eliza
+      - NODE_ENV=development
+    # Install all required dependencies
+    init: true
+    entrypoint: |
+      /bin/sh -c "
+        # Update system packages
+        apt-get update && apt-get install -y \
+          curl \
+          wget \
+          git \
+          build-essential \
+          pkg-config \
+          libssl-dev \
+          postgresql-client \
+          unzip \
+          software-properties-common \
+          ca-certificates \
+          gnupg \
+          lsb-release
+
+        # Install Rust and Cargo
+        if ! command -v rustc &> /dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          . ~/.cargo/env
+          export PATH=\"$$HOME/.cargo/bin:$$PATH\"
+        fi
+
+        # Install Bun
+        if ! command -v bun &> /dev/null; then
+          curl -fsSL https://bun.sh/install | bash
+          export BUN_INSTALL=\"$$HOME/.bun\"
+          export PATH=\"$$BUN_INSTALL/bin:$$PATH\"
+        fi
+
+        # Install Node.js (required for some dependencies)
+        if ! command -v node &> /dev/null; then
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y nodejs
+        fi
+
+        # Install Tauri CLI
+        if ! command -v cargo-tauri &> /dev/null; then
+          . ~/.cargo/env
+          cargo install tauri-cli
+        fi
+
+        # Make sure all binaries are in PATH for future sessions
+        echo 'export PATH=\"$$HOME/.cargo/bin:$$PATH\"' >> ~/.bashrc
+        echo 'export BUN_INSTALL=\"$$HOME/.bun\"' >> ~/.bashrc
+        echo 'export PATH=\"$$BUN_INSTALL/bin:$$PATH\"' >> ~/.bashrc
+
+        # Keep container running
+        sleep infinity
+      "
+
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: eliza
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../packages/game/init-scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d eliza"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
