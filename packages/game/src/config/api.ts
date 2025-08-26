@@ -5,6 +5,12 @@
 
 // Determine the backend URL based on environment
 const getBackendUrl = (): string => {
+  // Check for explicit backend URL override
+  const explicitUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.REACT_APP_BACKEND_URL;
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
   // Get backend port from environment variables (with fallback to 7777)
   const getBackendPort = () => {
     // Check multiple environment variable names
@@ -21,6 +27,12 @@ const getBackendUrl = (): string => {
 
   // Check if we're in a browser environment
   if (typeof window !== 'undefined') {
+    // Check if we're in GitHub Codespaces
+    if (window.location.hostname.includes('preview.github.dev')) {
+      // In Codespaces, use localhost for backend connections to avoid SSL issues
+      return `http://localhost:${backendPort}`;
+    }
+
     // In Tauri, we always connect directly to the backend
     if ((window as any).__TAURI__) {
       return `http://localhost:${backendPort}`;

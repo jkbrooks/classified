@@ -186,7 +186,8 @@ export default function StartupFlow({ onComplete }: StartupFlowProps) {
 
   const simulateBrowserStartup = async () => {
     // For browser mode, check if server is already running
-    const response = await fetch('http://localhost:7777/api/server/health');
+    const { apiUrl } = await import('../config/api');
+    const response = await fetch(apiUrl('/api/server/health'));
 
     if (response.ok) {
       console.log('[STARTUP] Server detected in browser mode, completing startup');
